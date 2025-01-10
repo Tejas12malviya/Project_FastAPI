@@ -1,0 +1,73 @@
+Modes for sqlite in powershell(terminal) are:
+.mode column
+.mode markdown
+.mode box
+.mode table
+
+after getting inside of db by calling {sqlite3 todos.db} we can use sql commands to do CRUD operations for the given table .
+
+--------------------------------------------------------------------------------------------------------------------------
+
+For connecting database with fastapi we use following steps:
+
+1. Install sqlalchemy through terminal.
+
+2. Create database URL link like
+   { SQL_DATABASE_URL="sqlite:///./todos.db" } here todos will be name of database.
+
+3. Import { create_engine } from { sqlalchemy } and connect the engine by calling
+   { engine = create_engine(SQL_DATABASE_URL,connect_agrs={"check_same_thread"}) }
+
+4. Import { from sqlalchemy.orm import sessionmaker } and create local session
+   { SessionLocal=sessionmaker(autocommit=False,autoflush=False,bind=engine) }
+
+5. At last { from sqlalchemy.orm.declarative import declarative_base } and call
+   { Base = declarative_base() } . It means that above declarations are stored inside Base.
+
+The above 2 - 5 steps are stored under the database.py file and then
+Make new file models.py which tells the overview of database, It contains following steps:
+
+6. At first import Base from database.db by calling { from database.db import Base }
+   and import Column, String, Boolean, Integer from sqlalchemy.
+
+7. Make a class calling Base and give the column name with its type for the database.
+   class Todos(Base):
+       __tablename__=todos
+
+       id = Column(Integer, primary_key=True, index=True)
+       title = Column(String)
+       description = Column(String)
+       preference = Column(Integer)
+       complete = Column(Boolean)
+
+These 6 and 7 Steps gives us info about our database i.e. it's name, Column_names, Column_type.
+After these make main.py file to connect our database with FastAPI
+
+8. In this file at first import FastAPI,
+   { Import models },
+   { from database import engine }
+   give command app=FastAPI()
+
+9. models.Base.metadata.create_all(bind=engine)
+
+10. In main.py create object for try and except i.e.
+
+    from database import SessionLocal
+    def get_db():
+        db = SessionLocal()
+        Try:
+           yield db
+        except:
+            return db.close()
+
+11. Now we have the main step which takes data from database and is used CRUD operation of FastAPI, i.e.
+
+    @app.get("/")
+    def read_db(db:Annotated[Session,Depends(get_db)]:
+        return db.query(Todos).all()
+
+    for this we have to import all key elements i.e.
+    from fastapi import query
+    from models import Todos
+    from typing import Annotated
+    from sqlalchemy.orm import Session

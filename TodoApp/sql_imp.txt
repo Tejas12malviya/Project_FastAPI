@@ -6,7 +6,7 @@ Modes for sqlite in powershell(terminal) are:
 
 after getting inside of db by calling {sqlite3 todos.db} we can use sql commands to do CRUD operations for the given table .
 
---------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
 
 For connecting database with fastapi we use following steps:
 
@@ -71,3 +71,55 @@ After these make main.py file to connect our database with FastAPI
     from models import Todos
     from typing import Annotated
     from sqlalchemy.orm import Session
+
+12. If we have to find specific todos with specific id we use
+    @app.get('/read_todo/{todo_id}')
+    def read_todo(todo_id:int, db:db_dependency):                  => here db_dependency=Annotated[Session,Depends(get_db)]
+        item= db.query(Todos).filter(Todos.id==todo_id).first()
+        if item is None:
+           raise HTTPException(status_code=404,details="Item not found')
+        else:
+           return item
+
+13. ----POST REQUEST----
+    If we have to create new todo_data and have to store it in our database todo.py we use post request
+    for storing data we have to us Basemodel which is called by Request. For this call " from pydantic import Basemodel,Field " and make blueprint of Todos using Request. These can be make by
+
+    class TodoRequest(Basemodel):
+       title:str = Field(min_length=3)
+       description:str = Field(min_length=3,max_length=100)
+       preference:int = Field(gt=0,lt=6)
+       complete:bool
+
+    @app.post('/create_todo/')
+    def create_todo(db:db_dependency, todo_create:Todo_Request):
+        todos=Todos(**todo_create.dict())
+        db.add(todos)
+        db.commit()
+
+14. ----PUT REQUEST----
+    To update the table(database) we use put request as
+
+    @app.put('/todo_update/{todo_id}')
+    def todo_update(db:db_dependency, todo_id:int, todo_update:TodoRequest):
+        item= db.query(Todos).filter(Todos.id==todo_id).first()
+        if item is None:
+            raise (status_code=404,details="Item not found')
+        else:
+            item.title=todo_update.title
+            item.description=todo_update.description
+            item.preference=todo_update.preference
+            item.complete=todo_update.complete
+            db.add(item)
+            db.commit()
+
+15. ----DELETE REQUEST----
+    It is used for deleting data of todos list as:
+
+    @app.delete('todo_delete/{todo_id}')
+    def todo_delete(todo_id:int,db:db_declarative):
+        item= db.query(Todos).filter(Todos.id==todo_id).first
+        db.delete(item)
+        db.commit()
+
+----------------------------------------------------------------------------------------------
